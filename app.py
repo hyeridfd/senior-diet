@@ -136,11 +136,21 @@ if page == "파이프라인 실행":
     with st.expander("⚙️ 시설 설정", expanded=not st.session_state["facility_loaded"]):
         col1, col2 = st.columns(2)
         with col1:
-            excel_path = st.text_input(
-                "입소자 데이터 경로",
-                value="./data/고령자.xlsx",
-                help="PatientProfile Excel 파일 경로"
+            # 수정 — 파일 업로더
+            uploaded_excel = st.file_uploader(
+                "입소자 데이터 (Excel)",
+                type=["xlsx"],
+                help="고령자.xlsx 파일을 업로드하세요"
             )
+            
+            # 업로드된 파일을 임시 저장
+            if uploaded_excel:
+                os.makedirs("./data", exist_ok=True)
+                excel_path = "./data/고령자_uploaded.xlsx"
+                with open(excel_path, "wb") as f:
+                    f.write(uploaded_excel.read())
+            else:
+                excel_path = None
             budget = st.number_input("끼니당 예산 (원)", value=10000, step=500)
         with col2:
             neo4j_uri  = st.text_input("Neo4j URI",      value=os.getenv("NEO4J_URI", "bolt://localhost:7687"))
