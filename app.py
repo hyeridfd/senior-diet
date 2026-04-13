@@ -158,40 +158,33 @@ if page == "파이프라인 실행":
             neo4j_pw   = st.text_input("Neo4j 비밀번호", value=os.getenv("NEO4J_PASSWORD", ""), type="password")
 
         # 수정 — 파일 없으면 버튼 비활성화
-            if st.button(
-                "📂 시설 데이터 로드",
-                type="primary",
-                disabled=(uploaded_excel is None)
-            ):
-                if excel_path is None:
-                    st.error("먼저 Excel 파일을 업로드해 주세요.")
-                else:
-                    with st.spinner("데이터 로드 중..."):
-                try:
-                    os.environ["NEO4J_URI"]      = neo4j_uri
-                    os.environ["NEO4J_USERNAME"]  = neo4j_user
-                    os.environ["NEO4J_PASSWORD"]  = neo4j_pw
-
-                    from facility_optimization import setup_facility
-                    fac = setup_facility(excel_path, budget_per_meal=budget)
-                    st.session_state["fac"]             = fac
-                    st.session_state["facility_loaded"] = True
-                    st.session_state["budget"]          = budget
-                    st.success(f"✅ 입소자 {len(fac['patients'])}명 로드 완료")
-
-                    # 질환 분포 표시
-                    from collections import Counter
-                    type_cnt = Counter(p.disease_type_label for p in fac["patients"])
-                    cols = st.columns(len(type_cnt))
-                    for i, (t, n) in enumerate(sorted(type_cnt.items(), key=lambda x: -x[1])):
-                        with cols[i]:
-                            st.markdown(f"""
-                            <div class="stat-card">
-                                <div class="stat-num">{n}</div>
-                                <div class="stat-label">{t}</div>
-                            </div>""", unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"❌ 로드 실패: {e}")
+            if st.button("📂 시설 데이터 로드", type="primary",
+                 disabled=(uploaded_excel is None)):
+                with st.spinner("데이터 로드 중..."):  # ← 169번 줄
+                    try:                               # ← 170번 줄 (들여쓰기 4칸)
+                        os.environ["NEO4J_URI"]      = neo4j_uri
+                        os.environ["NEO4J_USERNAME"] = neo4j_user
+                        os.environ["NEO4J_PASSWORD"] = neo4j_pw
+            
+                        from facility_optimization import setup_facility
+                        fac = setup_facility(excel_path, budget_per_meal=budget)
+                        st.session_state["fac"]             = fac
+                        st.session_state["facility_loaded"] = True
+                        st.session_state["budget"]          = budget
+                        st.success(f"✅ 입소자 {len(fac['patients'])}명 로드 완료")
+            
+                        from collections import Counter
+                        type_cnt = Counter(p.disease_type_label for p in fac["patients"])
+                        cols = st.columns(len(type_cnt))
+                        for i, (t, n) in enumerate(sorted(type_cnt.items(), key=lambda x: -x[1])):
+                            with cols[i]:
+                                st.markdown(f"""
+                                <div class="stat-card">
+                                    <div class="stat-num">{n}</div>
+                                    <div class="stat-label">{t}</div>
+                                </div>""", unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"❌ 로드 실패: {e}")
 
     # ── 파이프라인 실행 ─────────────────────────────────────
     st.divider()
