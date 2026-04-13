@@ -1,0 +1,9 @@
+streamlit>=1.32.0
+langchain-neo4j
+langgraph>=0.2.0
+pymoo
+numpy
+pandas
+openpyxl
+python-dotenv
+openai
