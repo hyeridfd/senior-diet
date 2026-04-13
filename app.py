@@ -166,7 +166,7 @@ if page == "파이프라인 실행":
                 if excel_path is None:
                     st.error("먼저 Excel 파일을 업로드해 주세요.")
                 else:
-            with st.spinner("데이터 로드 중..."):
+                    with st.spinner("데이터 로드 중..."):
                 try:
                     os.environ["NEO4J_URI"]      = neo4j_uri
                     os.environ["NEO4J_USERNAME"]  = neo4j_user
