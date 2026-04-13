@@ -64,38 +64,56 @@ class MealPlanProblem(Problem):
 
     def _nutrition_violation(self, menus):
         c = self.constraint
-        v = 0.0
+        meal_v  = 0.0   # 끼니 위반 누적
+        daily_v = 0.0   # 일별 위반 누적
+
         for day in range(N_DAYS):
-            daily = {k: 0.0 for k in
-                ["energy","carb","sugar","fat","sodium","sat_fat","potassium","fiber","vit_d"]}
-            base = day * N_SLOTS
+            daily_sum = {k: 0.0 for k in
+                ["energy","carb","sugar","fat","sodium",
+                "sat_fat","potassium","fiber","vit_d"]}
+            base      = day * N_SLOTS
             day_menus = menus[base:base+N_SLOTS]
+
             for _, slots in MEAL_SETS.items():
                 mm = [day_menus[s] for s in slots]
                 mn = {
                     "energy":    sum(m["energy"]    for m in mm),
-                    "sugar":     sum(m["sugar"]     for m in mm),
                     "protein":   sum(m["protein"]   for m in mm),
                     "fat":       sum(m["fat"]        for m in mm),
-                    "sat_fat":   sum(m["sat_fat"]   for m in mm),
-                    "sodium":    sum(m["sodium"]    for m in mm),
-                    "potassium": sum(m["potassium"] for m in mm),
-                    "fiber":     sum(m["fiber"]     for m in mm),
-                    "carb":      sum(m["carb"]       for m in mm),
+                    "sugar":     sum(m["sugar"]      for m in mm),
+                    "sat_fat":   sum(m["sat_fat"]    for m in mm),
+                    "sodium":    sum(m["sodium"]     for m in mm),
+                    "potassium": sum(m["potassium"]  for m in mm),
+                    "fiber":     sum(m["fiber"]      for m in mm),
+                    "carb":      sum(m["carb"]        for m in mm),
                 }
+
+                # ── 끼니별 체크 ─────────────────────────
                 for k, val in mn.items():
                     lo = getattr(c, f"{k}_min", None)
                     hi = getattr(c, f"{k}_max", None)
-                    if lo and val < lo: v += (lo - val) / lo
-                    if hi and val > hi: v += (val - hi) / hi
-                for k in daily:
-                    daily[k] += sum(m.get(k, 0.0) for m in mm)
-            for k, val in daily.items():
+                    if lo and val < lo: meal_v  += (lo - val) / lo
+                    if hi and val > hi: meal_v  += (val - hi) / hi
+
+                for k in daily_sum:
+                    daily_sum[k] += mn.get(k, 0.0)
+
+            # ── 일별 체크 ───────────────────────────────
+            for k, val in daily_sum.items():
                 lo = getattr(c, f"daily_{k}_min", None)
                 hi = getattr(c, f"daily_{k}_max", None)
-                if lo and val < lo: v += (lo - val) / lo
-                if hi and val > hi: v += (val - hi) / hi
-        return v / (N_DAYS * 3)
+                if lo and val < lo: daily_v += (lo - val) / lo
+                if hi and val > hi: daily_v += (val - hi) / hi
+
+        # ── 각각 정규화 후 가중 합산 ────────────────────
+        N_MEAL_ITEMS  = len(MEAL_SETS) * N_DAYS   # 84
+        N_DAILY_ITEMS = N_DAYS                     # 28
+
+        meal_score  = meal_v  / N_MEAL_ITEMS    # 끼니 위반율
+        daily_score = daily_v / N_DAILY_ITEMS   # 일별 위반율
+
+        # 끼니 60% + 하루 40% 가중치
+        return meal_score * 0.6 + daily_score * 0.4
 
     def _simpson_diversity(self, menus):
         names = [m["menu_name"] for m in menus]
