@@ -157,7 +157,15 @@ if page == "파이프라인 실행":
             neo4j_user = st.text_input("Neo4j 사용자",   value=os.getenv("NEO4J_USERNAME", "neo4j"))
             neo4j_pw   = st.text_input("Neo4j 비밀번호", value=os.getenv("NEO4J_PASSWORD", ""), type="password")
 
-        if st.button("📂 시설 데이터 로드", type="primary"):
+        # 수정 — 파일 없으면 버튼 비활성화
+            if st.button(
+                "📂 시설 데이터 로드",
+                type="primary",
+                disabled=(uploaded_excel is None)
+            ):
+                if excel_path is None:
+                    st.error("먼저 Excel 파일을 업로드해 주세요.")
+                else:
             with st.spinner("데이터 로드 중..."):
                 try:
                     os.environ["NEO4J_URI"]      = neo4j_uri
